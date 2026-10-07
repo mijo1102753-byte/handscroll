@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
+  <title>Collection</title>
+
+
+  <style>
+
+    /* ========================================
+       RESET
+    ======================================== */
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f5f5f3;
+      color: #111;
+      overflow: hidden;
+    }
+
+    button {
+      padding: 0;
+      border: 0;
+      background: none;
+      font: inherit;
+    }
+
+
+
+    /* ========================================
+       전체 화면
+    ======================================== */
+
+    .collection {
+      width: 100%;
+      height: 100dvh;
+
+      display: flex;
+      flex-direction: column;
+
+      background: #f5f5f3;
+
+      overflow: hidden;
+    }
+
+
+
+    /* ========================================
+       상단 제목
+    ======================================== */
+
+    .title {
+      height: 60px;
+
+      flex-shrink: 0;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      padding-top: 8px;
+
+      font-size: 13px;
+      font-weight: 400;
+
+      letter-spacing: 0.2px;
+    }
+
+
+
+    /* ========================================
+       큰 모델 이미지 영역
+    ======================================== */
+
+    .model-area {
+      position: relative;
+
+      width: 100%;
+
+      flex: 1;
+      min-height: 0;
+
+      overflow: hidden;
+    }
+
+    .model-image {
+      position: absolute;
+
+      top: 0;
+      left: 0;
+
+      width: 100%;
+      height: 100%;
+
+      object-fit: contain;
+
+      opacity: 0;
+
+      pointer-events: none;
+
+      user-select: none;
+      -webkit-user-drag: none;
+
+      transition: none;
+    }
+
+    .model-image.active {
+      opacity: 1;
+    }
+
+
+
+    /* ========================================
+       하단 제품 영역
+    ======================================== */
+
+    .product-area {
+      position: relative;
+
+      width: 100%;
+      height: 145px;
+
+      flex-shrink: 0;
+
+      background: #f5f5f3;
+    }
+
+
+
+    /* ========================================
+       가운데 선택 표시
+    ======================================== */
+
+    .selection-line {
+      position: absolute;
+
+      top: 4px;
+      left: 50%;
+
+      transform: translateX(-50%);
+
+      width: 28px;
+      height: 1px;
+
+      background: #111;
+
+      z-index: 5;
+
+      pointer-events: none;
+    }
+
+
+
+    /* ========================================
+       제품 가로 슬라이더
+       ★ 관성 스크롤용으로 수정
+    ======================================== */
+
+    .product-slider {
+      width: 100%;
+      height: 112px;
+
+      display: flex;
+      align-items: flex-start;
+
+      gap: 14px;
+
+      padding-top: 15px;
+
+      padding-left: calc(50vw - 35px);
+      padding-right: calc(50vw - 35px);
+
+      overflow-x: auto;
+      overflow-y: hidden;
+
+      /*
+        기존 mandatory snap 제거.
+        JS가 마지막에만 부드럽게 중앙 정렬함.
+      */
+      scroll-snap-type: none;
+
+      overscroll-behavior-x: contain;
+
+      scrollbar-width: none;
+
+      /*
+        모바일에서 세로 스크롤은 막고
+        가로 드래그를 JS가 직접 제어
+      */
+      touch-action: none;
+
+      cursor: grab;
+    }
+
+    .product-slider:active {
+      cursor: grabbing;
+    }
+
+    .product-slider::-webkit-scrollbar {
+      display: none;
+    }
+
+
+
+    /* ========================================
+       각각의 제품
+    ======================================== */
+
+    .product {
+      width: 70px;
+
+      flex: 0 0 70px;
+
+      cursor: pointer;
+
+      opacity: 0.28;
+
+      transform: scale(0.86);
+
+      transition:
+        opacity 0.18s ease,
+        transform 0.18s ease;
+    }
+
+    .product.active {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .product img {
+      display: block;
+
+      width: 70px;
+      height: 82px;
+
+      object-fit: contain;
+
+      user-select: none;
+      pointer-events: none;
+
+      -webkit-user-drag: none;
+    }
+
+
+
+    /* ========================================
+       하단 숫자
+    ======================================== */
+
+    .counter {
+      position: absolute;
+
+      left: 50%;
+      bottom: 8px;
+
+      transform: translateX(-50%);
+
+      font-size: 10px;
+
+      letter-spacing: 1.5px;
+
+      white-space: nowrap;
+    }
+
+
+
+    /* ========================================
+       21번째 FULL SCREEN
+    ======================================== */
+
+    .full-screen {
+      position: fixed;
+
+      top: 0;
+      left: 0;
+
+      width: 100%;
+      height: 100dvh;
+
+      z-index: 1000;
+
+      background: #f5f5f3;
+
+      opacity: 0;
+      visibility: hidden;
+
+      pointer-events: none;
+
+      transition: none;
+
+      overflow: hidden;
+
+      touch-action: pan-x;
+    }
+
+    .full-screen.active {
+      opacity: 1;
+      visibility: visible;
+
+      pointer-events: auto;
+    }
+
+    .full-screen img {
+      display: block;
+
+      width: 100%;
+      height: 100%;
+
+      object-fit: cover;
+
+      user-select: none;
+      pointer-events: none;
+
+      -webkit-user-drag: none;
+    }
+
+
+
+    /* ========================================
+       PC 테스트
+    ======================================== */
+
+    @media (min-width: 700px) {
+
+      body {
+        display: flex;
+        justify-content: center;
+
+        background: #dedede;
+      }
+
+      .collection {
+        width: 430px;
+
+        background: #f5f5f3;
+      }
+
+      .product-slider {
+        padding-left: 180px;
+        padding-right: 180px;
+      }
+
+      .full-screen {
+        left: 50%;
+
+        width: 430px;
+
+        transform: translateX(-50%);
+      }
+
+    }
+
+  </style>
+
+</head>
+
+
+
+<body>
+
+
+  <main
+    class="collection"
+    id="collection"
+  >
+
+
+    <!-- ========================================
+         TITLE
+    ======================================== -->
+
+    <div class="title">
+      BUILD A KNIT PACK
+    </div>
+
+
+
+    <!-- ========================================
+         MODEL 01 ~ 20
+    ======================================== -->
+
+    <section class="model-area">
+
+
+      <img
+        class="model-image active"
+        src="images/model-01.jpg"
+        alt="model 01"
+      >
+
+      <img
+        class="model-image"
+        src="images/model-02.jpg"
+        alt="model 02"
+      >
+
+      <img
+        class="model-image"
+        src="images/model-03.jpg"
+        alt="model 03"
+      >
+
+      <img
+        class="model-image"
+        src="images/model-04.jpg"
+        alt="model 04"
+      >
+
+      <img
+        class="model-image"
+        src="images/model-05.jpg"
+        alt="model 05"
+      >
+
+      <img
+        class="model-image"
+        src="images/model-06.jpg"
+        alt="model 06"
+      >
+
+      <img
+        class="model-image"
+        src="images/model-07.jpg"
+        alt="model 07"
+      >
+
+      <img
+        class="model-image"
+        src="images/model-08.jpg"
+        alt="model 08"
+      >
+
+      <img
+        class="model-image"
+        src="images/model-09.jpg"
+        alt="model 09"
+      >
+
+      <img
+        class="model-image"
+        src="images/model-10.jpg"
+        alt="model 10"
+      >
+
+      <img
+        class="model-image"
+        src="images/model-11.jpg"
+        alt="model 11"
+      >
+
+      <img
+        class="model-image"
+        src="images/model-12.jpg"
+        alt="model 12"
+      >
+
+      <img
+        class="model-image"
+        src="images/model-13.jpg"
+        alt="model 13"
+      >
+
+      <img
+        class="model-image"
+        src="images/model-14.jpg"
+        alt="model 14"
+      >
+
+      <img
+        class="model-image"
+        src="images/model-15.jpg"
+        alt="model 15"
+      >
+
+      <img
+        class="model-image"
+        src="images/model-16.jpg"
+        alt="model 16"
+      >
+
+      <img
+        class="model-image"
+        src="images/model-17.jpg"
+        alt="model 17"
+      >
+
+      <img
+        class="model-image"
+        src="images/model-18.jpg"
+        alt="model 18"
+      >
+
+      <img
+        class="model-image"
+        src="images/model-19.jpg"
+        alt="model 19"
+      >
+
+      <img
+        class="model-image"
+        src="images/model-20.jpg"
+        alt="model 20"
+      >
+
+
+    </section>
+
+
+
+    <!-- ========================================
+         PRODUCT 01 ~ 21
+    ======================================== -->
+
+    <section class="product-area">
+
+
+      <div class="selection-line"></div>
+
+
+      <div
+        class="product-slider"
+        id="productSlider"
+      >
+
+
+        <button class="product active" data-index="0">
+          <img src="images/product-01.jpg" alt="product 01">
+        </button>
+
+        <button class="product" data-index="1">
+          <img src="images/product-02.jpg" alt="product 02">
+        </button>
+
+        <button class="product" data-index="2">
+          <img src="images/product-03.jpg" alt="product 03">
+        </button>
+
+        <button class="product" data-index="3">
+          <img src="images/product-04.jpg" alt="product 04">
+        </button>
+
+        <button class="product" data-index="4">
+          <img src="images/product-05.jpg" alt="product 05">
+        </button>
+
+        <button class="product" data-index="5">
+          <img src="images/product-06.jpg" alt="product 06">
+        </button>
+
+        <button class="product" data-index="6">
+          <img src="images/product-07.jpg" alt="product 07">
+        </button>
+
+        <button class="product" data-index="7">
+          <img src="images/product-08.jpg" alt="product 08">
+        </button>
+
+        <button class="product" data-index="8">
+          <img src="images/product-09.jpg" alt="product 09">
+        </button>
+
+        <button class="product" data-index="9">
+          <img src="images/product-10.jpg" alt="product 10">
+        </button>
+
+        <button class="product" data-index="10">
+          <img src="images/product-11.jpg" alt="product 11">
+        </button>
+
+        <button class="product" data-index="11">
+          <img src="images/product-12.jpg" alt="product 12">
+        </button>
+
+        <button class="product" data-index="12">
+          <img src="images/product-13.jpg" alt="product 13">
+        </button>
+
+        <button class="product" data-index="13">
+          <img src="images/product-14.jpg" alt="product 14">
+        </button>
+
+        <button class="product" data-index="14">
+          <img src="images/product-15.jpg" alt="product 15">
+        </button>
+
+        <button class="product" data-index="15">
+          <img src="images/product-16.jpg" alt="product 16">
+        </button>
+
+        <button class="product" data-index="16">
+          <img src="images/product-17.jpg" alt="product 17">
+        </button>
+
+        <button class="product" data-index="17">
+          <img src="images/product-18.jpg" alt="product 18">
+        </button>
+
+        <button class="product" data-index="18">
+          <img src="images/product-19.jpg" alt="product 19">
+        </button>
+
+        <button class="product" data-index="19">
+          <img src="images/product-20.jpg" alt="product 20">
+        </button>
+
+
+        <!-- 21번째 마지막 썸네일 -->
+
+        <button class="product" data-index="20">
+          <img src="images/product-21.jpg" alt="product 21">
+        </button>
+
+
+      </div>
+
+
+
+      <div class="counter">
+
+        <span id="currentNumber">
+          01
+        </span>
+
+        /
+
+        <span>
+          21
+        </span>
+
+      </div>
+
+
+    </section>
+
+
+  </main>
+
+
+
+  <!-- ========================================
+       21번째 전체화면 통이미지
+  ======================================== -->
+
+  <section
+    class="full-screen"
+    id="fullScreen"
+  >
+
+    <img
+      src="images/model-21.jpg"
+      alt="full screen 21"
+    >
+
+  </section>
+
+
+
+  <script>
+
+    /* ========================================
+       요소
+    ======================================== */
+
+    const slider =
+      document.getElementById("productSlider");
+
+    const products =
+      document.querySelectorAll(".product");
+
+    const modelImages =
+      document.querySelectorAll(".model-image");
+
+    const currentNumber =
+      document.getElementById("currentNumber");
+
+    const fullScreen =
+      document.getElementById("fullScreen");
+
+
+
+    let currentIndex = 0;
+
+
+
+    /* ========================================
+       모델 / 제품 활성화
+    ======================================== */
+
+    function setNormalActive(index) {
+
+      currentIndex = index;
+
+
+      modelImages.forEach(
+        (image, i) => {
+
+          image.classList.toggle(
+            "active",
+            i === index
+          );
+
+        }
+      );
+
+
+      products.forEach(
+        (product, i) => {
+
+          product.classList.toggle(
+            "active",
+            i === index
+          );
+
+        }
+      );
+
+
+      currentNumber.textContent =
+        String(index + 1)
+          .padStart(2, "0");
+
+    }
+
+
+
+    /* ========================================
+       중앙에 가장 가까운 제품
+    ======================================== */
+
+    function getClosestIndex() {
+
+      const sliderRect =
+        slider.getBoundingClientRect();
+
+      const center =
+        sliderRect.left +
+        sliderRect.width / 2;
+
+
+      let closestIndex = 0;
+      let closestDistance = Infinity;
+
+
+      products.forEach(
+        (product, index) => {
+
+          const rect =
+            product.getBoundingClientRect();
+
+          const productCenter =
+            rect.left +
+            rect.width / 2;
+
+          const distance =
+            Math.abs(
+              center - productCenter
+            );
+
+
+          if (distance < closestDistance) {
+
+            closestDistance = distance;
+            closestIndex = index;
+
+          }
+
+        }
+      );
+
+
+      return closestIndex;
+
+    }
+
+
+
+    /* ========================================
+       스크롤되는 동안
+       중앙 제품에 따라 모델 계속 변경
+
+       ★ 21번은 여기서 바로 열지 않음.
+       관성이 완전히 끝난 뒤에만 열림.
+    ======================================== */
+
+    function updateDuringScroll() {
+
+      const index =
+        getClosestIndex();
+
+
+      /*
+        01 ~ 20
+      */
+
+      if (index <= 19) {
+
+        if (index !== currentIndex) {
+
+          setNormalActive(index);
+
+        }
+
+      }
+
+
+      /*
+        21번째 썸네일이 중앙을 지나갈 때
+        썸네일만 활성화
+      */
+
+      if (index === 20) {
+
+        products.forEach(
+          (product, i) => {
+
+            product.classList.toggle(
+              "active",
+              i === 20
+            );
+
+          }
+        );
+
+
+        currentNumber.textContent = "21";
+
+      }
+
+    }
+
+
+
+    /* ========================================
+       21번째 전체화면
+    ======================================== */
+
+    function openFullScreen() {
+
+      currentIndex = 20;
+
+      fullScreen.classList.add(
+        "active"
+      );
+
+    }
+
+
+
+    function closeFullScreen() {
+
+      fullScreen.classList.remove(
+        "active"
+      );
+
+
+      const product20 =
+        products[19];
+
+
+      product20.scrollIntoView({
+
+        behavior: "auto",
+
+        inline: "center",
+
+        block: "nearest"
+
+      });
+
+
+      setNormalActive(19);
+
+    }
+
+
+
+    /* ========================================
+       관성 스크롤
+    ======================================== */
+
+    let isDragging = false;
+
+    let startX = 0;
+
+    let lastX = 0;
+
+    let lastTime = 0;
+
+    let velocity = 0;
+
+    let inertiaFrame = null;
+
+    let snapFrame = null;
+
+    let moved = false;
+
+
+
+    /*
+      관성 강도.
+
+      0.95  → 비교적 빨리 멈춤
+      0.965 → 현재 설정
+      0.98  → 훨씬 오래 미끄러짐
+    */
+
+    const FRICTION = 0.965;
+
+
+    /*
+      너무 빠른 플릭 방지
+    */
+
+    const MAX_VELOCITY = 24;
+
+
+
+    /* ========================================
+       애니메이션 중지
+    ======================================== */
+
+    function stopAnimations() {
+
+      if (inertiaFrame) {
+
+        cancelAnimationFrame(
+          inertiaFrame
+        );
+
+        inertiaFrame = null;
+
+      }
+
+
+      if (snapFrame) {
+
+        cancelAnimationFrame(
+          snapFrame
+        );
+
+        snapFrame = null;
+
+      }
+
+    }
+
+
+
+    /* ========================================
+       드래그 시작
+    ======================================== */
+
+    slider.addEventListener(
+      "pointerdown",
+      (event) => {
+
+        stopAnimations();
+
+
+        isDragging = true;
+
+        moved = false;
+
+
+        startX =
+          event.clientX;
+
+        lastX =
+          event.clientX;
+
+        lastTime =
+          performance.now();
+
+        velocity = 0;
+
+
+        slider.setPointerCapture(
+          event.pointerId
+        );
+
+      }
+    );
+
+
+
+    /* ========================================
+       손가락 / 마우스로 직접 움직이는 동안
+    ======================================== */
+
+    slider.addEventListener(
+      "pointermove",
+      (event) => {
+
+        if (!isDragging) {
+          return;
+        }
+
+
+        const now =
+          performance.now();
+
+
+        const currentX =
+          event.clientX;
+
+
+        const deltaX =
+          currentX - lastX;
+
+
+        const deltaTime =
+          Math.max(
+            now - lastTime,
+            1
+          );
+
+
+        /*
+          손가락을 오른쪽으로 움직이면
+          내용은 왼쪽 방향으로 이동
+        */
+
+        slider.scrollLeft -=
+          deltaX;
+
+
+        /*
+          px / ms 단위 속도 계산
+
+          이전 속도와 섞어서
+          갑작스러운 속도 변화 방지
+        */
+
+        const instantVelocity =
+          (-deltaX / deltaTime) * 16.67;
+
+
+        velocity =
+          velocity * 0.65 +
+          instantVelocity * 0.35;
+
+
+        /*
+          지나치게 빠른 속도 제한
+        */
+
+        velocity =
+          Math.max(
+            -MAX_VELOCITY,
+            Math.min(
+              MAX_VELOCITY,
+              velocity
+            )
+          );
+
+
+        if (
+          Math.abs(currentX - startX) > 4
+        ) {
+
+          moved = true;
+
+        }
+
+
+        lastX =
+          currentX;
+
+        lastTime =
+          now;
+
+
+        /*
+          손가락으로 움직이는 순간에도
+          중앙 모델 계속 변경
+        */
+
+        updateDuringScroll();
+
+      }
+    );
+
+
+
+    /* ========================================
+       손을 놓았을 때
+    ======================================== */
+
+    slider.addEventListener(
+      "pointerup",
+      endDrag
+    );
+
+
+    slider.addEventListener(
+      "pointercancel",
+      endDrag
+    );
+
+
+
+    function endDrag(event) {
+
+      if (!isDragging) {
+        return;
+      }
+
+
+      isDragging = false;
+
+
+      try {
+
+        slider.releasePointerCapture(
+          event.pointerId
+        );
+
+      } catch (error) {}
+
+
+      /*
+        거의 움직이지 않았으면
+        관성 없이 중앙 정렬
+      */
+
+      if (
+        Math.abs(velocity) < 0.3
+      ) {
+
+        snapToClosest();
+
+        return;
+
+      }
+
+
+      startInertia();
+
+    }
+
+
+
+    /* ========================================
+       손을 놓은 뒤 관성
+
+       빠름
+        ↓
+       중간
+        ↓
+       느림
+        ↓
+       정지
+    ======================================== */
+
+    function startInertia() {
+
+      stopAnimations();
+
+
+      function animate() {
+
+
+        /*
+          현재 속도만큼 계속 이동
+        */
+
+        slider.scrollLeft +=
+          velocity;
+
+
+        /*
+          매 프레임 조금씩 감속
+        */
+
+        velocity *=
+          FRICTION;
+
+
+        /*
+          움직이는 동안 모델도
+          하나하나 계속 변경
+        */
+
+        updateDuringScroll();
+
+
+
+        /*
+          거의 멈췄을 때
+        */
+
+        if (
+          Math.abs(velocity) < 0.22
+        ) {
+
+          inertiaFrame = null;
+
+          snapToClosest();
+
+          return;
+
+        }
+
+
+        /*
+          양 끝에 도착했으면 종료
+        */
+
+        const maxScroll =
+          slider.scrollWidth -
+          slider.clientWidth;
+
+
+        if (
+          slider.scrollLeft <= 0 ||
+          slider.scrollLeft >= maxScroll
+        ) {
+
+          velocity = 0;
+
+          inertiaFrame = null;
+
+          snapToClosest();
+
+          return;
+
+        }
+
+
+        inertiaFrame =
+          requestAnimationFrame(
+            animate
+          );
+
+      }
+
+
+      inertiaFrame =
+        requestAnimationFrame(
+          animate
+        );
+
+    }
+
+
+
+    /* ========================================
+       관성이 끝난 뒤
+       가장 가까운 제품을 중앙으로
+       천천히 정렬
+    ======================================== */
+
+    function snapToClosest() {
+
+      stopAnimations();
+
+
+      const index =
+        getClosestIndex();
+
+
+      const product =
+        products[index];
+
+
+      const sliderRect =
+        slider.getBoundingClientRect();
+
+
+      const productRect =
+        product.getBoundingClientRect();
+
+
+      const sliderCenter =
+        sliderRect.left +
+        sliderRect.width / 2;
+
+
+      const productCenter =
+        productRect.left +
+        productRect.width / 2;
+
+
+      const difference =
+        productCenter -
+        sliderCenter;
+
+
+      const startScroll =
+        slider.scrollLeft;
+
+
+      const targetScroll =
+        startScroll +
+        difference;
+
+
+      /*
+        마지막 중앙 정렬 시간
+        숫자가 클수록 천천히 정렬
+      */
+
+      const duration = 380;
+
+
+      const startTime =
+        performance.now();
+
+
+
+      function animateSnap(now) {
+
+
+        const elapsed =
+          now - startTime;
+
+
+        const progress =
+          Math.min(
+            elapsed / duration,
+            1
+          );
+
+
+        /*
+          ease-out cubic
+          마지막으로 갈수록 천천히
+        */
+
+        const eased =
+          1 -
+          Math.pow(
+            1 - progress,
+            3
+          );
+
+
+        slider.scrollLeft =
+          startScroll +
+          (
+            targetScroll -
+            startScroll
+          ) * eased;
+
+
+        updateDuringScroll();
+
+
+
+        if (progress < 1) {
+
+          snapFrame =
+            requestAnimationFrame(
+              animateSnap
+            );
+
+          return;
+
+        }
+
+
+        snapFrame = null;
+
+
+
+        /*
+          최종 선택
+        */
+
+        if (index === 20) {
+
+          openFullScreen();
+
+        } else {
+
+          setNormalActive(index);
+
+        }
+
+      }
+
+
+      snapFrame =
+        requestAnimationFrame(
+          animateSnap
+        );
+
+    }
+
+
+
+    /* ========================================
+       제품 클릭
+    ======================================== */
+
+    products.forEach(
+      (product, index) => {
+
+        product.addEventListener(
+          "click",
+          () => {
+
+
+            /*
+              드래그한 직후 발생하는
+              클릭은 무시
+            */
+
+            if (moved) {
+
+              moved = false;
+
+              return;
+
+            }
+
+
+            stopAnimations();
+
+
+            const sliderRect =
+              slider.getBoundingClientRect();
+
+
+            const productRect =
+              product.getBoundingClientRect();
+
+
+            const difference =
+              (
+                productRect.left +
+                productRect.width / 2
+              ) -
+              (
+                sliderRect.left +
+                sliderRect.width / 2
+              );
+
+
+            const start =
+              slider.scrollLeft;
+
+
+            const target =
+              start + difference;
+
+
+            const duration = 420;
+
+            const startTime =
+              performance.now();
+
+
+
+            function animateClick(now) {
+
+              const progress =
+                Math.min(
+                  (now - startTime) /
+                  duration,
+                  1
+                );
+
+
+              const eased =
+                1 -
+                Math.pow(
+                  1 - progress,
+                  3
+                );
+
+
+              slider.scrollLeft =
+                start +
+                (
+                  target -
+                  start
+                ) * eased;
+
+
+              updateDuringScroll();
+
+
+              if (progress < 1) {
+
+                snapFrame =
+                  requestAnimationFrame(
+                    animateClick
+                  );
+
+              } else {
+
+
+                snapFrame = null;
+
+
+                if (index === 20) {
+
+                  openFullScreen();
+
+                } else {
+
+                  setNormalActive(index);
+
+                }
+
+              }
+
+            }
+
+
+            snapFrame =
+              requestAnimationFrame(
+                animateClick
+              );
+
+          }
+        );
+
+      }
+    );
+
+
+
+    /* ========================================
+       21번째 전체화면에서
+       오른쪽 스와이프 → 20번으로 복귀
+    ======================================== */
+
+    let fullTouchStartX = 0;
+
+    let fullTouchEndX = 0;
+
+
+    fullScreen.addEventListener(
+      "touchstart",
+      (event) => {
+
+        fullTouchStartX =
+          event.changedTouches[0]
+            .screenX;
+
+      },
+      {
+        passive: true
+      }
+    );
+
+
+    fullScreen.addEventListener(
+      "touchend",
+      (event) => {
+
+        fullTouchEndX =
+          event.changedTouches[0]
+            .screenX;
+
+
+        const swipeDistance =
+          fullTouchEndX -
+          fullTouchStartX;
+
+
+        if (
+          swipeDistance > 50
+        ) {
+
+          closeFullScreen();
+
+        }
+
+      },
+      {
+        passive: true
+      }
+    );
+
+
+  </script>
+
+
+</body>
+
+</html>
